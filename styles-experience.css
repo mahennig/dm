@@ -435,8 +435,42 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   margin-bottom: 1.5rem;
 }
 .chapter__eyebrow::before { content: ''; width: 26px; height: 1px; background: var(--lime); }
-.chapter__title { font-size: clamp(2.2rem, 5.2vw, 4rem); color: var(--ink); }
-.chapter__title em { font-style: italic; color: var(--lime); }
+/* Section titles: Asterone brand face, regular weight, upright, UPPERCASE. The
+   emphasised phrase becomes a green textmarker with knocked-out letters. */
+[data-story-node] {
+  font-family: var(--brand); font-weight: 400; font-style: normal;
+  text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.05;
+  color: var(--ink);
+}
+.chapter__title { font-size: clamp(2.2rem, 5.2vw, 4rem); }
+/* Chapter 01 brand headline keeps its wordmark sizing. */
+.chapter__title--brand { font-size: clamp(1.9rem, 4.4vw, 3.2rem); line-height: 0.98; }
+/* Green textmarker with transparent (knocked-out) letters that reveal the fixed
+   page backdrop — used for Chapter 01's "Why" and every title's emphasis. */
+.chapter__mark,
+[data-story-node] em {
+  position: relative; display: inline-block;
+  padding: 0.12em 0.3em 0.06em; line-height: 0.9;
+  color: transparent; -webkit-text-fill-color: transparent;
+  background-color: #52533f;
+  background-image:
+    var(--noise),
+    radial-gradient(ellipse 55% 45% at 80% 84%, rgba(196,196,158,0.4), transparent 62%),
+    radial-gradient(ellipse 85% 75% at 8% 6%, rgba(28,29,20,0.45), transparent 64%),
+    radial-gradient(ellipse 100% 90% at 50% 100%, rgba(24,25,17,0.32), transparent 70%);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 180px 180px, auto, auto, auto;
+  background-attachment: fixed;
+  -webkit-background-clip: text; background-clip: text;
+}
+.chapter__mark::before,
+[data-story-node] em::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: var(--lime); border-radius: 2px;
+}
+.chapter__mark { margin-bottom: 0.12em; }
+.chapter__wordmark { display: block; color: var(--ink); }
+.chapter__q { color: var(--lime); }
 .chapter__text { margin-top: 1.5rem; color: rgba(240,236,228,0.65); font-size: 1.05rem; max-width: 44ch; }
 .chapter__visual {
   position: relative; border-radius: 18px; overflow: hidden;
@@ -575,10 +609,12 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .insta__verify { color: var(--lime); }
 .insta__meta { font-size: 0.8rem; color: var(--gray); }
 .insta__stats { display: flex; gap: 1.4rem; margin: 1.3rem 0; }
-.insta__stat b { font-family: var(--display); font-size: 1.5rem; display: block; }
+.insta__stat { flex: 1 1 0; min-width: 0; }
+.insta__stat b { font-family: var(--display); font-size: 1.5rem; display: block; font-variant-numeric: tabular-nums; }
 .insta__stat span { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray); }
 .insta__brands { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .insta__brands span { font-size: 0.68rem; padding: 0.3rem 0.7rem; border: 1px solid var(--panel-brd); border-radius: 999px; color: rgba(240,236,228,0.75); }
+.insta__brands .insta__brands-more { color: var(--lime); border-color: rgba(174,251,58,0.4); }
 
 /* --------------------------------------------------------------------------
    Ads / performance dashboard
@@ -962,23 +998,8 @@ body.lightbox-open { overflow: hidden; }
 }
 [data-story-node].is-linked::after { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 [data-story-node].is-linked { animation: titleIgnite 0.9s var(--ease) both; }
-[data-story-node].is-linked em { color: var(--lime); }
-
-/* accent word gets an underline that sweeps in as the line passes */
-[data-story-node] em { position: relative; }
-[data-story-node] em::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: -0.08em;
-  height: 2px;
-  background: var(--lime);
-  box-shadow: 0 0 12px rgba(174, 251, 58, 0.9);
-  transform: scaleX(0);
-  transform-origin: left;
-  opacity: 0;
-  transition: transform 0.6s var(--ease) 0.12s, opacity 0.3s var(--ease) 0.12s;
-}
-[data-story-node].is-linked em::after { transform: scaleX(1); opacity: 1; }
+/* The emphasised word is a green textmarker (see .chapter__mark rules), so no
+   separate lime colour swap or sweeping underline is applied here. */
 
 @keyframes titleIgnite {
   0%   { text-shadow: 0 0 0 rgba(174, 251, 58, 0); }
