@@ -658,6 +658,10 @@
       m.circle.classList.toggle('is-on', on);
       if (m.el) m.el.classList.toggle('is-linked', on);
     });
+    // When the line reaches the closing title, fade everything above it away so
+    // the final call-to-action becomes the sole focus.
+    var finale = nodeMarkers[nodeMarkers.length - 1];
+    document.body.classList.toggle('finale-focus', !!finale && drawn >= finale.l - 1);
   }
 
   function stepStoryLine() {
@@ -1123,22 +1127,23 @@
       if (tiltRAF === null) tiltRAF = requestAnimationFrame(decayTilt);
     }
 
-    // Wheel: dominant-vertical wheel drives horizontal motion. Only consume
-    // (and block the page) while the strip can still move that way; at either
-    // end, let the event through so the page resumes vertical scrolling.
+    // Wheel: a downward (forward) wheel advances the strip horizontally while it
+    // still has room; at the right end it releases to the page. An UPWARD wheel
+    // is never captured — it always scrolls the page up — so the visitor can
+    // always leave the section and can never get trapped rewinding the strip.
+    // (Rewinding the strip stays available via drag and trackpad/horizontal swipe.)
     vp.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) { nudgeTilt(e.deltaX); return; }
       var max = maxScroll();
       if (max <= 0) return;
-      var goingRight = e.deltaY > 0;
-      var atStart = target <= 0;
-      var atEnd = target >= max - 1;
-      if ((goingRight && !atEnd) || (!goingRight && !atStart)) {
-        glideTo(target + e.deltaY);
-        nudgeTilt(e.deltaY);
-        e.preventDefault();
-        e.stopPropagation(); // keep the page (native + virtual) from scrolling
-      }
+      if (e.deltaY <= 0) return;            // up-scroll → let the page handle it
+      var sl = vp.scrollLeft;
+      if (sl >= max - 1) return;            // at the right end → release to page
+      if (raf === null) target = sl;        // resync so a fresh flick starts here
+      glideTo(target + e.deltaY);
+      nudgeTilt(e.deltaY);
+      e.preventDefault();
+      e.stopPropagation();                  // keep the page (native + virtual) still
     }, { passive: false });
 
     // Keep the target in sync when the strip is scrolled by other means
@@ -1160,6 +1165,8 @@
     });
     window.addEventListener('pointermove', function (e) {
       if (!dragging) return;
+      // If the button was released outside the window (missed pointerup), stop.
+      if (e.buttons === 0) { dragging = false; vp.classList.remove('is-dragging'); return; }
       var dx = e.clientX - startX;
       if (Math.abs(dx) > 3) moved = true;
       vp.scrollLeft = startLeft - dx;
@@ -1171,10 +1178,31 @@
       dragging = false;
       vp.classList.remove('is-dragging');
     });
+    window.addEventListener('pointercancel', function () {
+      if (!dragging) return;
+      dragging = false;
+      vp.classList.remove('is-dragging');
+    });
     // Swallow the click that ends a drag so it doesn't open a case study.
     vp.addEventListener('click', function (e) {
       if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
     }, true);
+
+    // Hover-to-centre: pointing at (or focusing) a card glides the strip so
+    // that card sits in the middle of the viewport.
+    function centreCard(card) {
+      if (dragging) return;
+      var centre = card.offsetLeft + card.offsetWidth / 2 - vp.clientWidth / 2;
+      glideTo(centre);
+    }
+    if (!reduce && window.matchMedia('(hover: hover)').matches) {
+      Array.prototype.slice.call(track.querySelectorAll('.portfolio-card')).forEach(function (card) {
+        card.addEventListener('mouseenter', function () { centreCard(card); });
+      });
+    }
+    Array.prototype.slice.call(track.querySelectorAll('.portfolio-card')).forEach(function (card) {
+      card.addEventListener('focusin', function () { centreCard(card); });
+    });
   })();
 
   /* ----------------------------------------------------------------------
