@@ -789,28 +789,31 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   align-items: center;
   gap: clamp(1.5rem, 3vw, 3rem);
   width: max-content;
+  transform-style: preserve-3d;
 }
 
 .portfolio-card {
   position: relative; cursor: pointer;
   flex: 0 0 clamp(300px, 34vw, 460px);
+  transform-style: preserve-3d;
   transition: transform 0.55s var(--ease);
 }
 .portfolio-card:hover, .portfolio-card:focus-within { z-index: 6; }
 
-/* Flat, evenly spaced thumbnails. The hovered/focused card lifts forward and
-   is scrolled to the centre of the strip by the JS controller. */
+/* Evenly spaced panes, each turned slightly in 3D for a gallery-corridor feel.
+   On hover/focus the card straightens to face you, lifts forward, and the JS
+   controller glides it to the centre of the strip. */
 .portfolio-card__media {
   position: relative; z-index: 1;
   aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden;
   background: #111;
-  transform: scale(1);
+  transform: rotateY(-32deg);
   transform-origin: center center;
   transition: transform 0.55s var(--ease), box-shadow 0.55s var(--ease);
 }
 .portfolio-card:hover .portfolio-card__media,
 .portfolio-card:focus-within .portfolio-card__media {
-  transform: scale(1.06);
+  transform: rotateY(0deg) translateZ(80px) scale(1.04);
   box-shadow: 0 24px 60px rgba(0,0,0,0.55);
 }
 .portfolio-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
