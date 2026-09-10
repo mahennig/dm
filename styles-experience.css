@@ -48,17 +48,26 @@ html { scroll-behavior: smooth; font-size: 16px; -webkit-font-smoothing: antiali
 body {
   font-family: var(--sans);
   background-color: #52533f;
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-x: hidden;
+  isolation: isolate;
+}
+/* The page backdrop lives on a dedicated fixed pseudo-element (rather than
+   background-attachment: fixed on body) because any 3D transform/perspective
+   elsewhere on the page — e.g. the Proof tiles — otherwise breaks fixed
+   backgrounds in Chrome/Safari and makes them drift while scrolling. */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
   background-image:
     var(--noise),
     radial-gradient(ellipse 55% 45% at 80% 84%, rgba(196,196,158,0.4), transparent 62%),
     radial-gradient(ellipse 85% 75% at 8% 6%, rgba(28,29,20,0.45), transparent 64%),
     radial-gradient(ellipse 100% 90% at 50% 100%, rgba(24,25,17,0.32), transparent 70%);
-  background-attachment: fixed, fixed, fixed, fixed;
   background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   background-size: 180px 180px, auto, auto, auto;
-  color: var(--ink);
-  line-height: 1.6;
-  overflow-x: hidden;
+  pointer-events: none;
 }
 img, svg, video { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -659,8 +668,9 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .portfolio-card {
   position: relative; cursor: pointer;
   flex: 0 0 clamp(300px, 34vw, 460px);
-  /* Cards overlap so the angled panes read as one continuous wall. */
-  margin-right: clamp(-190px, -13vw, -130px);
+  /* Angled panes with a gentle overlap — enough to keep the corridor feel,
+     but with real breathing room between cards so the strip reads clearly. */
+  margin-right: clamp(-70px, -4vw, -40px);
   transform-style: preserve-3d;
   transition: transform 0.55s var(--ease);
 }
@@ -670,24 +680,23 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
    immediate neighbours slide aside (via transform, so the hovered card itself
    stays put and never loses the pointer) to open real space on both sides. */
 .portfolio-card:hover + .portfolio-card,
-.portfolio-card:focus-within + .portfolio-card { transform: translateX(110px); }
+.portfolio-card:focus-within + .portfolio-card { transform: translateX(80px); }
 .portfolio-card:has(+ .portfolio-card:hover),
-.portfolio-card:has(+ .portfolio-card:focus-within) { transform: translateX(-110px); }
+.portfolio-card:has(+ .portfolio-card:focus-within) { transform: translateX(-80px); }
 
 /* Each image is a pane turned in 3D (left edge toward the viewer). On hover it
    swings flat to face you and lifts forward. */
 .portfolio-card__media {
   position: relative; z-index: 1;
   aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden;
-  background: #111; box-shadow: -20px 30px 60px rgba(0,0,0,0.55);
+  background: #111;
   transform: rotateY(-42deg);
   transform-origin: center center;
-  transition: transform 0.55s var(--ease), box-shadow 0.55s var(--ease);
+  transition: transform 0.55s var(--ease);
 }
 .portfolio-card:hover .portfolio-card__media,
 .portfolio-card:focus-within .portfolio-card__media {
   transform: rotateY(0deg) translateZ(90px) scale(1.02);
-  box-shadow: 0 50px 100px rgba(0,0,0,0.6);
 }
 .portfolio-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .portfolio-card:hover .portfolio-card__media img,
@@ -718,6 +727,21 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .portfolio-card:focus-within .portfolio-card__caption { opacity: 1; transform: translateX(-50%) translateY(0); }
 .portfolio-card__caption span { color: #fff; font-size: clamp(0.9rem, 1.3vw, 1.05rem); letter-spacing: 0.02em; }
 .portfolio-card__caption h3 { display: none; }
+
+/* Centred description below the whole strip — reveals the hovered/focused
+   card's brand label in one fixed place in the middle. */
+.portfolio__desc {
+  max-width: 720px; margin: 0 auto; text-align: center;
+  min-height: 2.4rem;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+.portfolio__desc.is-active { opacity: 1; transform: translateY(0); }
+.portfolio__desc-brand {
+  color: var(--lime); margin-bottom: 0;
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.portfolio__desc-hook { display: none; }
 
 /* Placeholder tiles (content coming later). */
 .portfolio-card--ph { pointer-events: none; }

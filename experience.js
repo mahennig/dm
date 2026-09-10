@@ -109,6 +109,18 @@
   }
   calibrateScrollRoot();
 
+  // In virtual-scroll mode the root must never scroll natively — all motion is
+  // driven by the CSS transform. Focus() / scrollIntoView on descendants (e.g.
+  // restoring focus after the case-study lightbox closes) can still set
+  // scrollTop on the overflow:hidden root, which stacks on top of the transform
+  // and leaves a blank gap under the footer while throwing off the nav math.
+  // Snap it back to 0 whenever that happens.
+  if (scrollRoot) {
+    scrollRoot.addEventListener('scroll', function () {
+      if (useVirtualScroll && scrollRoot.scrollTop !== 0) scrollRoot.scrollTop = 0;
+    }, { passive: true });
+  }
+
   // Smoothed virtual scroll: wheel/keys nudge a *target* position and a RAF
   // loop eases the rendered position toward it, so big batched wheel/trackpad
   // deltas glide instead of snapping. Touch follows the finger 1:1 and then
@@ -708,9 +720,14 @@
       var playBtn = promo.querySelector('.promo__play');
       if (!playBtn) return;
       var preview = promo.querySelector('.promo__preview');
+      var youtubeUrl = promo.getAttribute('data-youtube');
       var loaded = false;
 
       function play() {
+        if (youtubeUrl) {
+          window.open(youtubeUrl, '_blank', 'noopener');
+          return;
+        }
         if (loaded) return;
         loaded = true;
         var isMobile = window.matchMedia('(max-width: 640px)').matches;
@@ -765,10 +782,10 @@
       document.body.classList.remove('lightbox-open');
       document.querySelectorAll('body > :not(#portfolioLightbox)').forEach(function (el) { el.inert = false; });
       videoWrap.innerHTML = ''; // stop playback
-      if (lastFocused) { lastFocused.focus(); lastFocused = null; }
+      if (lastFocused) { lastFocused.focus({ preventScroll: true }); lastFocused = null; }
     }
 
-    function openLightbox(card) {
+    function openLightbox(card, fromHistory) {
       var videoId = card.getAttribute('data-video');
       var eyebrow = card.querySelector('.portfolio-card__caption span');
       var title   = card.querySelector('.portfolio-card__caption h3');
@@ -794,20 +811,73 @@
       lightbox.setAttribute('aria-hidden', 'false');
       document.body.classList.add('lightbox-open');
       document.querySelectorAll('body > :not(#portfolioLightbox)').forEach(function (el) { el.inert = true; });
-      lightbox.querySelector('.lightbox__close').focus();
+      lightbox.querySelector('.lightbox__close').focus({ preventScroll: true });
+
+      // Give the case study a shareable URL (#work/<slug>) and a history entry
+      // so the browser Back button (and Escape) returns to the page underneath.
+      var slug = card.getAttribute('data-slug');
+      if (!fromHistory && slug) {
+        history.pushState({ dmLightbox: slug }, '', '#work/' + slug);
+      }
     }
 
+    var descBox   = document.getElementById('portfolioDesc');
+    var descBrand = descBox && descBox.querySelector('.portfolio__desc-brand');
+    var descHook  = descBox && descBox.querySelector('.portfolio__desc-hook');
+    function showDesc(card) {
+      if (!descBox) return;
+      var brand = card.querySelector('.portfolio-card__caption span');
+      var hook  = card.querySelector('.portfolio-card__caption h3');
+      descBrand.textContent = brand ? brand.textContent : '';
+      descHook.textContent  = hook ? hook.textContent : '';
+      descBox.classList.add('is-active');
+    }
+    function hideDesc() { if (descBox) descBox.classList.remove('is-active'); }
+
+    var cardsBySlug = {};
     document.querySelectorAll('.portfolio-card').forEach(function (card) {
       var trigger = card.querySelector('.portfolio-card__trigger');
       if (!trigger) return;
+      var slug = card.getAttribute('data-slug');
+      if (slug) cardsBySlug[slug] = card;
       trigger.addEventListener('click', function () { openLightbox(card); });
+      card.addEventListener('mouseenter', function () { showDesc(card); });
+      card.addEventListener('mouseleave', hideDesc);
+      card.addEventListener('focusin', function () { showDesc(card); });
+      card.addEventListener('focusout', hideDesc);
+    });
+
+    // ---- Routing: #work/<slug> ------------------------------------------
+    function slugFromHash() {
+      var m = location.hash.match(/^#work\/(.+)$/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+    // Close requested by the user (button / Escape). Prefer stepping back in
+    // history so the URL unwinds cleanly; fall back to a direct close when this
+    // view was opened straight from a shared link.
+    function requestClose() {
+      if (!lightbox.classList.contains('is-open')) return;
+      if (history.state && history.state.dmLightbox) {
+        history.back(); // popstate handler performs the actual close
+      } else {
+        if (slugFromHash()) history.replaceState(null, '', location.pathname + location.search);
+        closeLightbox();
+      }
+    }
+    window.addEventListener('popstate', function () {
+      var slug = slugFromHash();
+      if (slug && cardsBySlug[slug]) {
+        if (!lightbox.classList.contains('is-open')) openLightbox(cardsBySlug[slug], true);
+      } else if (lightbox.classList.contains('is-open')) {
+        closeLightbox();
+      }
     });
 
     lightbox.querySelectorAll('[data-lightbox-close]').forEach(function (el) {
-      el.addEventListener('click', closeLightbox);
+      el.addEventListener('click', requestClose);
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
+      if (e.key === 'Escape' && lightbox.classList.contains('is-open')) requestClose();
       if (e.key !== 'Tab' || !lightbox.classList.contains('is-open')) return;
       var focusable = Array.prototype.slice.call(lightbox.querySelectorAll('button, [href], iframe, [tabindex]:not([tabindex="-1"])'));
       if (!focusable.length) return;
@@ -824,6 +894,12 @@
     if (panel) {
       panel.addEventListener('click', function (e) { e.stopPropagation(); });
     }
+
+    // Open directly when the page is loaded on a shared #work/<slug> URL.
+    (function openFromInitialHash() {
+      var slug = slugFromHash();
+      if (slug && cardsBySlug[slug]) openLightbox(cardsBySlug[slug], true);
+    })();
   })();
 
   /* ----------------------------------------------------------------------
@@ -848,7 +924,7 @@
     function ease() {
       var diff = target - vp.scrollLeft;
       if (Math.abs(diff) < 0.5) { vp.scrollLeft = target; raf = null; return; }
-      vp.scrollLeft += diff * 0.16;
+      vp.scrollLeft += diff * 0.22;
       raf = requestAnimationFrame(ease);
     }
     function glideTo(x) {
@@ -935,7 +1011,12 @@
       var t = document.querySelector(id);
       if (!t) return;
       e.preventDefault();
-      var top = useLocalScroll && scrollRoot ? t.offsetTop - 70 : t.getBoundingClientRect().top + window.scrollY - 70;
+      // Use the full offset chain (getStaticTop) rather than the raw offsetTop,
+      // which is only relative to the nearest positioned ancestor — that made
+      // nested targets like #contact scroll to the wrong place.
+      var top = (useLocalScroll || useVirtualScroll) && scrollRoot
+        ? getStaticTop(t) - 70
+        : t.getBoundingClientRect().top + window.scrollY - 70;
       scrollToY(top);
     });
   });
