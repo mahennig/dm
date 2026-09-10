@@ -596,6 +596,17 @@
     var sec = promoSection.getBoundingClientRect();  // section (incl. release buffer)
     var full = fullscreenPromoRect();
 
+    // On phones the docked slot is already almost full-width, so the grow/pin
+    // choreography barely changes the film's size — it just swallows a screen
+    // of scrolling where nothing visibly happens. Skip it entirely and track
+    // the slot 1:1 so the film simply scrolls inline like any other content.
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setPromoBox(r.left, r.top, r.width, r.height, 18);
+      promoOverlay.style.opacity = (r.bottom < 0 || r.top > vh) ? '0' : '1';
+      if (chapter1Text) chapter1Text.style.opacity = '1';
+      return;
+    }
+
     if (reduce) {
       chapter1Text && (chapter1Text.style.opacity = '');
       return;
@@ -698,13 +709,27 @@
     // Each title becomes a point the line threads through vertically:
     // it enters at the title's top and exits at the bottom, weaving
     // left/right to line up with where each title actually sits.
+    var narrow = vw <= 900;
     var pts = heads.map(function (h) {
       var rawTop = getStaticTop(h);
       var left = getStaticLeft(h);
       var w = h.offsetWidth;
-      // Thread the line through the horizontal centre of each title so it
-      // touches the chapter in the middle, whichever side the copy sits on.
-      var cx = left + w / 2;
+      // Desktop: thread through each title's horizontal centre — the copy grid
+      // alternates sides, so the line already weaves left/right. On narrow
+      // phones every title spans the full column, so a centre-based line would
+      // run dead straight; instead hug the side the text is actually aligned to
+      // (left/right-aligned copy alternates down the page), which restores the
+      // weave while keeping each node sitting over its title text.
+      var cx;
+      if (narrow) {
+        var ta = getComputedStyle(h).textAlign;
+        var inset = Math.min(w * 0.32, vw * 0.2);
+        if (ta === 'right' || ta === 'end') cx = left + w - inset;
+        else if (ta === 'center') cx = left + w / 2;
+        else cx = left + inset;
+      } else {
+        cx = left + w / 2;
+      }
       cx = Math.max(22, Math.min(cx, vw - 22));
       return { el: h, x: cx, topY: rawTop - 4, midY: rawTop + h.offsetHeight / 2, botY: rawTop + h.offsetHeight + 4 };
     }).sort(function (a, b) { return a.topY - b.topY; });

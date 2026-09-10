@@ -343,6 +343,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .exp-header__cta:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(174, 251, 58, 0.3); }
+/* The short CTA label ("Let's talk") is swapped in on narrow phones only. */
+.exp-header__cta-short { display: none; }
 
 /* --------------------------------------------------------------------------
    HERO — logo, eyebrow, tagline
@@ -362,6 +364,10 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   overflow: hidden;
   background: var(--bg);
   pointer-events: none;
+  /* Keep the hero clean, then feather only the very bottom edge so the orb
+     video dissolves into the olive content background right at the seam. */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 86%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 0%, #000 86%, transparent 100%);
 }
 .hero__video iframe {
   position: absolute;
@@ -387,8 +393,11 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .hero__inner { position: relative; z-index: 3; max-width: min(1200px, 94vw); }
 .hero__wordmark {
   font-family: var(--brand); font-weight: 400;
-  font-size: clamp(1.9rem, 5.5vw, 4.4rem); letter-spacing: -0.01em; line-height: 0.94;
+  font-size: clamp(1.5rem, 9.5vw, 4.4rem); letter-spacing: -0.01em; line-height: 0.94;
   color: rgba(255,255,255,0.97);
+  /* Keep "DESIGNMINDSET." + the orb dot on a single line at every width — the
+     clamp scales the size down on small screens instead of wrapping. */
+  white-space: nowrap;
   margin: 0 auto 0.5rem;
   opacity: 0;
   animation: fadeUp 1.1s var(--ease) 0.3s forwards;
@@ -1130,6 +1139,9 @@ body.chapters-open { overflow: hidden; }
 @media (max-width: 900px) {
   .container, .chapter__grid, .promo-release-buffer { max-width: 100vw; }
   .chapter__grid, .insta__grid, .ads__grid, .story__grid, .portfolio__grid, .process__inner { grid-template-columns: 1fr; }
+  /* The promo film no longer pins/grows on phones (see experience.js), so the
+     tall scroll buffer it reserved would just be dead space — collapse it. */
+  .promo-release-buffer { height: 0; }
   .services__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .proof__grid { grid-template-columns: repeat(2, 1fr); }
   .exp-header__chapters { display: inline-flex; }
@@ -1171,14 +1183,29 @@ body.chapters-open { overflow: hidden; }
   .service { min-height: 210px; }
   .process__steps li { grid-template-columns: 1fr; }
   .guide__name { font-size: 1rem; }
-  .dash__row { grid-template-columns: 1fr; }
-  .dash__flow { grid-template-columns: 1fr; }
-  .dash__flow i { height: 18px; width: 1px; justify-self: start; margin-left: 0.4rem; }
-  /* Keep the fixed header from crowding on narrow phones */
-  .exp-header { padding: 0.85rem 1.25rem; gap: 0.6rem; }
-  .exp-header__logo { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.92rem; }
-  .exp-header__cta { display: inline-flex; align-items: center; min-height: 44px; padding: 0.55rem 1.05rem; font-size: 0.72rem; }
+  .dash { padding: 1.3rem; }
+  .dash__row { grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .dash__kpi b { font-size: 1.3rem; }
+  .dash__flow { gap: 0.4rem; font-size: 0.58rem; letter-spacing: 0.06em; }
+  /* Keep the fixed header from crowding on narrow phones: shrink the wordmark,
+     reduce the Chapters control to an icon and swap in the short CTA label. */
+  .exp-header { padding: 0.7rem 1rem; gap: 0.5rem; }
+  .exp-header__actions { gap: 0.5rem; }
+  .exp-header__logo { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.78rem; }
+  .exp-header__chapters { width: 44px; height: 44px; padding: 0; justify-content: center; gap: 0; }
+  .exp-header__chapters-label { display: none; }
+  .exp-header__cta { display: inline-flex; align-items: center; min-height: 44px; padding: 0.55rem 1.1rem; font-size: 0.74rem; }
+  .exp-header__cta-full { display: none; }
+  .exp-header__cta-short { display: inline; }
   .contact__email { display: inline-flex; align-items: center; min-height: 44px; }
+  /* Pull the closing title and its actions into one centred cluster instead of
+     pinning the button to the bottom (which left the title stranded high up). */
+  .contact__actions { position: static; left: auto; right: auto; bottom: auto; margin-top: 2.25rem; }
+  /* Tighten the footer so it doesn't dominate the small screen. */
+  .exp-footer { padding: 1.75rem 0; }
+  .exp-footer__inner { gap: 1rem; }
+  .exp-footer__brand { gap: 1rem; align-items: flex-start; }
+  .exp-footer__logo { font-size: 1rem; }
 }
 
 /* --------------------------------------------------------------------------
