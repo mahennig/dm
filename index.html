@@ -18,7 +18,7 @@
   <meta name="twitter:image" content="https://designmindsetagency.com/assets/logo-header.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" />
   <link rel="preload" href="assets/fonts/asterone-regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="styles-experience.css" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
@@ -50,6 +50,9 @@
 
   <a href="#chapter-1" class="skip-link">Skip to content</a>
 
+  <!-- Reading-progress bar (top edge) -->
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"><span></span></div>
+
   <!-- Chapter navigation rail (built by experience.js) -->
   <nav class="chapter-nav" id="chapterNav" aria-label="Chapter navigation"></nav>
 
@@ -70,8 +73,31 @@
   <!-- Minimal header (appears after hero) -->
   <header class="exp-header" id="expHeader">
     <a href="#hero" class="exp-header__logo" aria-label="Design Mindset">DESIGNMINDSET<span class="logo-dot">.</span></a>
-    <a href="#contact" class="exp-header__cta">Start a conversation</a>
+    <div class="exp-header__actions">
+      <button class="exp-header__chapters" id="chaptersToggle" type="button"
+              aria-haspopup="dialog" aria-expanded="false" aria-controls="chaptersSheet">
+        <span class="exp-header__chapters-lines" aria-hidden="true"><i></i><i></i></span>
+        Chapters
+      </button>
+      <a href="#contact" class="exp-header__cta">Start a conversation</a>
+    </div>
   </header>
+
+  <!-- Mobile chapters sheet (fullscreen table of contents; list built by experience.js) -->
+  <div class="chapters-sheet" id="chaptersSheet" aria-hidden="true">
+    <div class="chapters-sheet__backdrop" data-chapters-close></div>
+    <div class="chapters-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="chaptersSheetTitle">
+      <div class="chapters-sheet__bar">
+        <span class="chapters-sheet__title" id="chaptersSheetTitle">Chapters</span>
+        <button class="chapters-sheet__close" type="button" data-chapters-close aria-label="Close chapters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <nav aria-label="Chapters">
+        <ol class="chapters-sheet__list" id="chaptersSheetList"></ol>
+      </nav>
+    </div>
+  </div>
 
   <main id="experienceRoot" class="experience-root">
 
@@ -88,7 +114,7 @@
     <!-- ===================== HERO ===================== -->
     <section class="hero" id="hero" data-nav="Start">
       <div class="hero__video" aria-hidden="true">
-        <video poster="assets/orb-poster.jpg" autoplay muted loop playsinline preload="auto" tabindex="-1">
+        <video poster="assets/orb-poster.jpg" autoplay muted loop playsinline preload="metadata" tabindex="-1">
           <source src="assets/orb.webm" type="video/webm" />
           <source src="assets/orb.mp4" type="video/mp4" />
         </video>
@@ -133,7 +159,7 @@
       <div class="container">
         <div class="chapter__grid">
           <figure class="chapter__visual reveal">
-            <img src="assets/georgiana-showroom.jpg" alt="Georgiana Gogolan at a design showroom" />
+            <img src="assets/georgiana-showroom.jpg" alt="Georgiana Gogolan at a design showroom" loading="lazy" decoding="async" />
           </figure>
           <div class="reveal reveal--right">
             <span class="chapter__eyebrow">Chapter 02</span>
@@ -156,11 +182,11 @@
         </div>
         <div class="split reveal">
           <div class="split__cell">
-            <h4>Generalist agency</h4>
+            <h3>Generalist agency</h3>
             <p>Learns your industry on your budget. Generic playbooks. Interchangeable creative that could belong to any brand.</p>
           </div>
           <div class="split__cell split__cell--us">
-            <h4>Design Mindset</h4>
+            <h3>Design Mindset</h3>
             <p>Native to premium design. We already know the fairs, the buyers, the architects and the language your brand speaks.</p>
           </div>
         </div>
@@ -174,12 +200,12 @@
       <div class="container">
         <div class="case__head reveal reveal--blur">
           <span class="chapter__eyebrow">Chapter 04 · Case study</span>
-          <h2 class="case__title" data-story-node>Now, let's show you <em>what we actually do.</em></h2>
+          <h2 class="case__title" data-story-node>Now, let's show you what we <em>actually do.</em></h2>
         </div>
         <div class="case__embed reveal">
           <div class="promo"
            data-youtube="https://www.youtube.com/watch?v=k2owNc0BwmY">
-            <video class="promo__preview" autoplay muted loop playsinline preload="metadata"
+            <video class="promo__preview" muted loop playsinline preload="none"
                    poster="assets/baxter-milano-poster.jpg" tabindex="-1" aria-hidden="true">
               <source src="assets/baxter-milano-preview.mp4" type="video/mp4" />
             </video>
@@ -269,7 +295,7 @@
         <div class="chapter__grid chapter__grid--copy">
           <div class="reveal reveal--right">
             <span class="chapter__eyebrow">Chapter 07 · Identity</span>
-            <h2 class="chapter__title" data-story-node>Identity that <em>reflects the value.</em></h2>
+            <h2 class="chapter__title" data-story-node>Identity that reflects the <em>value.</em></h2>
             <p class="chapter__text">From first sketch to a complete system — evolving as if designed live.</p>
             <div class="gfx__tags">
               <span>Logo Design</span><span>Rebranding</span><span>Web Design</span>
@@ -287,7 +313,7 @@
       <div class="container">
         <div class="team__head reveal">
           <span class="chapter__eyebrow">Chapter 08 · The team</span>
-          <h2 class="chapter__title" data-story-node>Meet the <em>people behind it.</em></h2>
+          <h2 class="chapter__title" data-story-node>Meet the <em>people</em> behind it.</h2>
         </div>
         <div class="team__grid">
           <div class="member member--text reveal"><p class="member__name">Georgiana</p><p class="member__role">Architect, Interior Designer &amp; Brand Image Strategist</p></div>
@@ -314,7 +340,7 @@
         <div class="container">
           <div class="portfolio__head reveal reveal--blur">
             <span class="chapter__eyebrow">Proof · selected work</span>
-            <h2 id="portfolio-title" data-story-node>A studio built for <em>premium design momentum.</em></h2>
+            <h2 id="portfolio-title" data-story-node>A studio built for premium design <em>momentum.</em></h2>
           </div>
         </div>
         <div class="portfolio__viewport" id="portfolioViewport" tabindex="0" role="group" aria-label="Selected work — scroll horizontally">
@@ -382,7 +408,7 @@
                 <p>We were invited to Baxter's closing party during Milano Design Week, and somewhere between the music, the people and the pieces we already loved, we discovered something even more interesting: what Baxter feels like beyond the furniture.</p>
                 <p>We met the people behind the brand, talked about design, obsession, craftsmanship and the kind of objects you keep loving years after you first see them.</p>
                 <p>The result was a story about Baxter beyond the showroom — about personality, atmosphere and why timeless design can still make you ridiculously happy.</p>
-                <p>Sometimes you don't fall in love just with a chair, cuz you fall in love with the whole world around it.</p>
+                <p>Sometimes you do not fall in love with a chair alone. You fall in love with the whole world built around it.</p>
               </template>
             </article>
             <article class="portfolio-card reveal" data-video="gwqOin_DWeE" data-slug="linea-decor-romania">
@@ -440,7 +466,7 @@
         <div class="container">
           <div class="story__grid story__grid--copy">
             <div class="reveal">
-              <h2 data-story-node>Born from <em>inside the industry.</em></h2>
+              <h2 data-story-node>Born from inside the <em>industry.</em></h2>
               <p>Design Mindset didn't arrive from the outside with a generic playbook. We grew up inside premium design — working with the brands, the architects and the fairs that define it.</p>
               <p>Today we help design brands grow with the same care, strategy and human connection we'd want for our own.</p>
             </div>
@@ -451,8 +477,8 @@
       <section class="contact" id="contact" data-nav="Contact">
         <div class="container">
           <h2 class="contact__title reveal reveal--blur" data-story-node>Let's tell your <em>story.</em></h2>
-          <p class="contact__sub reveal">If you run a premium design brand and want strategy, storytelling and growth from a team that speaks your language — start here.</p>
-          <a href="mailto:office@designmindsetagency.com" class="contact__cta reveal">Start a conversation →</a>
+          <p class="contact__sub reveal">If you run a premium design brand and want strategy, storytelling and growth from a team that already speaks your language, send us the context. We will come back with the smartest next move.</p>
+          <a href="mailto:office@designmindsetagency.com?subject=Design%20Mindset%20discovery%20call&body=Hi%20Design%20Mindset%2C%0A%0AI%27d%20like%20to%20discuss%20a%20project%20for%20our%20design%20brand.%0A%0ABrand%3A%0AGoal%3A%0ATimeline%3A%0A%0AThank%20you%2C" class="contact__cta reveal">Book a discovery call</a>
           <a href="mailto:office@designmindsetagency.com" class="contact__email">office@designmindsetagency.com</a>
         </div>
       </section>
@@ -484,7 +510,7 @@
     <div class="promo" id="promo"
          data-src-desktop="assets/designmindset-promo-1080.mp4"
          data-src-mobile="assets/designmindset-promo-720.mp4">
-      <video class="promo__preview" autoplay muted loop playsinline preload="metadata"
+      <video class="promo__preview" muted loop playsinline preload="none"
              poster="assets/designmindset-promo-poster.jpg" tabindex="-1" aria-hidden="true">
         <source src="assets/designmindset-promo-preview.mp4" type="video/mp4" />
       </video>
@@ -514,7 +540,7 @@
         <div class="lightbox__video" id="lightboxVideo"></div>
         <div class="lightbox__body">
           <span class="lightbox__eyebrow" id="lightboxEyebrow"></span>
-          <h3 class="lightbox__title" id="lightboxTitle"></h3>
+          <h3 class="lightbox__title" id="lightboxTitle" hidden>Case study</h3>
           <div class="lightbox__desc" id="lightboxDesc"></div>
           <a class="lightbox__yt" id="lightboxYoutube" target="_blank" rel="noopener">
             Watch on YouTube

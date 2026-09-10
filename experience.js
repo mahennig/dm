@@ -65,6 +65,7 @@
   }
 
   function getScrollMax() {
+    if (useVirtualScroll && scrollRoot) return scrollRoot.scrollHeight - window.innerHeight;
     if (useLocalScroll && scrollRoot) return scrollRoot.scrollHeight - scrollRoot.clientHeight;
     var doc = document.documentElement;
     return doc.scrollHeight - doc.clientHeight;
@@ -85,6 +86,39 @@
     } else {
       window.scrollTo({ top: top, behavior: 'smooth' });
     }
+  }
+
+  var focusableSelector = 'a, button, input, select, textarea, [tabindex]';
+
+  function setSequentialFocus(item, active) {
+    if (!item.hasAttribute('data-natural-tabindex')) {
+      item.setAttribute('data-natural-tabindex', item.getAttribute('tabindex') || '');
+    }
+    var natural = item.getAttribute('data-natural-tabindex');
+    if (active) {
+      if (natural) item.setAttribute('tabindex', natural);
+      else item.removeAttribute('tabindex');
+    } else {
+      item.setAttribute('tabindex', '-1');
+    }
+  }
+
+  function setInteractiveRegion(el, active) {
+    if (!el) return;
+    el.toggleAttribute('inert', !active);
+    el.setAttribute('aria-hidden', active ? 'false' : 'true');
+    el.querySelectorAll(focusableSelector).forEach(function (item) { setSequentialFocus(item, active); });
+  }
+
+  function syncRootFocusables() {
+    if (!useVirtualScroll || !scrollRoot) return;
+    var viewportTop = virtualY - window.innerHeight * 0.12;
+    var viewportBottom = virtualY + window.innerHeight * 1.12;
+    scrollRoot.querySelectorAll(focusableSelector).forEach(function (item) {
+      var itemTop = getStaticTop(item);
+      var itemBottom = itemTop + (item.offsetHeight || 44);
+      setSequentialFocus(item, itemBottom >= viewportTop && itemTop <= viewportBottom);
+    });
   }
 
   function calibrateScrollRoot() {
@@ -137,10 +171,17 @@
     virtualY = clampVirtual(y);
     scrollRoot.style.setProperty('--virtual-y', (-virtualY) + 'px');
     updateHeaderSolid();
+    updateScrollProgress();
     drawStoryLine();
     updateVirtualGuide();
     updateVirtualReveals();
     updatePromoScale();
+    syncRootFocusables();
+    var promoOverlayEl = document.getElementById('promoOverlay');
+    if (promoOverlayEl) {
+      var promoRect = promoOverlayEl.getBoundingClientRect();
+      setInteractiveRegion(promoOverlayEl, promoRect.bottom > 0 && promoRect.top < window.innerHeight);
+    }
   }
 
   function stopVirtualAnim() {
@@ -280,6 +321,8 @@
       guideSwapTimer = null;
       guideName.textContent = name;
       guideRole.textContent = role;
+      // Static-only: `quote` comes from a hard-coded data-guide-quote attribute
+      // in index.html, never from user input, so innerHTML is safe here.
       guideQuote.innerHTML = quote;
       if (guideInitials) guideInitials.textContent = initials;
       // Show the real portrait when a chapter provides one, otherwise fall back
@@ -323,8 +366,7 @@
       if (getStaticTop(chapter) <= midpoint) active = chapter;
     });
     if (guide) guide.classList.toggle('is-visible', guideAllowedAt(virtualY));
-    if (header) header.classList.toggle('is-visible', virtualY > window.innerHeight * 0.3);
-    if (chapterNav) chapterNav.classList.toggle('is-visible', virtualY > window.innerHeight * 0.3);
+    setChromeVisibility(virtualY > window.innerHeight * 0.3);
     setGuide(active);
   }
 
@@ -343,45 +385,147 @@
      ---------------------------------------------------------------------- */
   var header = document.getElementById('expHeader');
   var hero   = document.getElementById('hero');
+  var progressBar = document.getElementById('scrollProgress');
+  function setChromeVisibility(visible) {
+    if (header) header.classList.toggle('is-visible', visible);
+    if (chapterNav) chapterNav.classList.toggle('is-visible', visible);
+    if (progressBar) progressBar.classList.toggle('is-visible', visible);
+    setInteractiveRegion(header, visible);
+    setInteractiveRegion(chapterNav, visible && window.matchMedia('(min-width: 901px)').matches);
+  }
   if (hero && 'IntersectionObserver' in window) {
     var heroObs = new IntersectionObserver(function (entries) {
       var past = !entries[0].isIntersecting;
       if (guide)  guide.classList.toggle('is-visible', past && guideAllowedAt(getScrollTop()));
-      if (header) header.classList.toggle('is-visible', past);
-      if (chapterNav) chapterNav.classList.toggle('is-visible', past);
+      setChromeVisibility(past);
     }, { threshold: 0.35 });
     heroObs.observe(hero);
   }
   function updateHeaderSolid() {
     if (header) header.classList.toggle('is-solid', getScrollTop() > window.innerHeight * 0.9);
   }
+  function updateScrollProgress() {
+    if (!progressBar) return;
+    var max = getScrollMax();
+    var p = max > 0 ? getScrollTop() / max : 0;
+    progressBar.style.setProperty('--progress', Math.max(0, Math.min(1, p)).toFixed(4));
+  }
   window.addEventListener('scroll', updateHeaderSolid, { passive: true });
   if (scrollRoot) scrollRoot.addEventListener('scroll', updateHeaderSolid, { passive: true });
+  window.addEventListener('scroll', updateScrollProgress, { passive: true });
+  if (scrollRoot) scrollRoot.addEventListener('scroll', updateScrollProgress, { passive: true });
 
   /* ----------------------------------------------------------------------
      2b. Chapter navigation rail + active-section tracking
      ---------------------------------------------------------------------- */
   var chapterNav = document.getElementById('chapterNav');
+  var sheetList = document.getElementById('chaptersSheetList');
+  var navSections = Array.prototype.slice.call(document.querySelectorAll('[data-nav]'))
+    .filter(function (sec) { return sec.id; });
   var navDots = [];
-  if (chapterNav) {
-    Array.prototype.slice.call(document.querySelectorAll('[data-nav]')).forEach(function (sec) {
-      if (!sec.id) return;
+  var sheetItems = [];
+  setInteractiveRegion(header, false);
+  navSections.forEach(function (sec, i) {
+    var label = sec.getAttribute('data-nav');
+    if (chapterNav) {
       var dot = document.createElement('a');
       dot.className = 'chapter-nav__dot';
       dot.href = '#' + sec.id;
-      dot.setAttribute('data-label', sec.getAttribute('data-nav'));
-      dot.setAttribute('aria-label', 'Go to ' + sec.getAttribute('data-nav'));
+      dot.setAttribute('data-label', label);
+      dot.setAttribute('aria-label', 'Go to ' + label);
       chapterNav.appendChild(dot);
       navDots.push({ el: dot, target: sec });
-    });
-  }
+    }
+    if (sheetList) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chapters-sheet__item';
+      var num = document.createElement('span');
+      num.className = 'chapters-sheet__num';
+      num.textContent = ('0' + (i + 1)).slice(-2);
+      var text = document.createElement('span');
+      text.className = 'chapters-sheet__label';
+      text.textContent = label;
+      btn.appendChild(num);
+      btn.appendChild(text);
+      li.appendChild(btn);
+      sheetList.appendChild(li);
+      sheetItems.push({ el: btn, target: sec });
+    }
+  });
+  if (chapterNav) setInteractiveRegion(chapterNav, false);
+  window.addEventListener('resize', function () { setChromeVisibility(getScrollTop() > window.innerHeight * 0.3); }, { passive: true });
   function updateActiveChapter() {
-    if (!navDots.length) return;
+    if (!navSections.length) return;
     var probe = getScrollTop() + window.innerHeight * 0.42;
     var activeIdx = 0;
-    navDots.forEach(function (d, i) { if (getStaticTop(d.target) <= probe) activeIdx = i; });
+    navSections.forEach(function (sec, i) { if (getStaticTop(sec) <= probe) activeIdx = i; });
     navDots.forEach(function (d, i) { d.el.classList.toggle('is-active', i === activeIdx); });
+    sheetItems.forEach(function (d, i) { d.el.classList.toggle('is-active', i === activeIdx); });
   }
+
+  /* Mobile chapters sheet — fullscreen table of contents driven by the same
+     [data-nav] sections as the desktop rail. */
+  (function chaptersSheet() {
+    var sheet = document.getElementById('chaptersSheet');
+    var toggle = document.getElementById('chaptersToggle');
+    if (!sheet || !toggle) return;
+    var lastFocused = null;
+
+    function scrollToSection(sec) {
+      var top = (useLocalScroll || useVirtualScroll) && scrollRoot
+        ? getStaticTop(sec) - 70
+        : sec.getBoundingClientRect().top + window.scrollY - 70;
+      scrollToY(top);
+    }
+    function open() {
+      lastFocused = document.activeElement;
+      sheet.classList.add('is-open');
+      sheet.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('chapters-open');
+      var closeBtn = sheet.querySelector('.chapters-sheet__close');
+      if (closeBtn) closeBtn.focus({ preventScroll: true });
+    }
+    function close(restoreFocus) {
+      sheet.classList.remove('is-open');
+      sheet.setAttribute('aria-hidden', 'true');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('chapters-open');
+      if (restoreFocus !== false && lastFocused) lastFocused.focus({ preventScroll: true });
+      lastFocused = null;
+    }
+
+    toggle.addEventListener('click', function () {
+      if (sheet.classList.contains('is-open')) close();
+      else open();
+    });
+    sheet.querySelectorAll('[data-chapters-close]').forEach(function (el) {
+      el.addEventListener('click', function () { close(); });
+    });
+    sheetItems.forEach(function (item) {
+      item.el.addEventListener('click', function () {
+        close(false);
+        scrollToSection(item.target);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!sheet.classList.contains('is-open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+      var focusable = Array.prototype.slice
+        .call(sheet.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])'))
+        .filter(function (el) { return el.offsetParent !== null; });
+      if (!focusable.length) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    window.addEventListener('resize', function () {
+      if (sheet.classList.contains('is-open') && window.matchMedia('(min-width: 901px)').matches) close();
+    }, { passive: true });
+  })();
 
   /* ----------------------------------------------------------------------
      2c. Staggered grid reveals
@@ -761,6 +905,33 @@
   })();
 
   /* ----------------------------------------------------------------------
+     6a. Lazy ambient previews — the below-the-fold .promo__preview loops ship
+         without `autoplay`/`preload` so they don't all download and decode at
+         once on load. Start them only while visible, pause them off-screen.
+     ---------------------------------------------------------------------- */
+  (function lazyPreviews() {
+    var previews = document.querySelectorAll('.promo__preview');
+    if (!previews.length) return;
+    if (reduce || !('IntersectionObserver' in window)) return;
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var video = entry.target;
+        var promo = video.closest('.promo');
+        // Don't fight the full-film playback that replaces the preview.
+        if (promo && promo.classList.contains('is-playing')) return;
+        if (entry.isIntersecting) {
+          if (video.preload === 'none') video.preload = 'metadata';
+          var p = video.play();
+          if (p && typeof p.catch === 'function') { p.catch(function () {}); }
+        } else {
+          video.pause();
+        }
+      });
+    }, { threshold: 0.25 });
+    previews.forEach(function (video) { obs.observe(video); });
+  })();
+
+  /* ----------------------------------------------------------------------
      6b. Portfolio lightbox — click a case-study tile to open its story with
          the embedded YouTube video and full write-up.
      ---------------------------------------------------------------------- */
@@ -782,6 +953,7 @@
       document.body.classList.remove('lightbox-open');
       document.querySelectorAll('body > :not(#portfolioLightbox)').forEach(function (el) { el.inert = false; });
       videoWrap.innerHTML = ''; // stop playback
+      if (titleEl) titleEl.hidden = true;
       if (lastFocused) { lastFocused.focus({ preventScroll: true }); lastFocused = null; }
     }
 
@@ -794,6 +966,9 @@
 
       eyebrowEl.textContent = eyebrow ? eyebrow.textContent : '';
       titleEl.textContent   = title ? title.textContent : '';
+      titleEl.hidden        = !titleEl.textContent.trim();
+      // Static-only: `full` is an author-written <template> in index.html, not
+      // user input, so assigning its innerHTML here is safe.
       descEl.innerHTML      = full ? full.innerHTML : '';
       if (ytLink) ytLink.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(videoId);
 
@@ -1019,5 +1194,13 @@
         : t.getBoundingClientRect().top + window.scrollY - 70;
       scrollToY(top);
     });
+  });
+
+  document.addEventListener('focusin', function (e) {
+    if (!useVirtualScroll || !scrollRoot || !scrollRoot.contains(e.target)) return;
+    var rect = e.target.getBoundingClientRect();
+    var margin = Math.min(140, window.innerHeight * 0.18);
+    if (rect.top >= margin && rect.bottom <= window.innerHeight - margin) return;
+    setVirtualScroll(getStaticTop(e.target) - margin);
   });
 })();
