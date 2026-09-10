@@ -393,10 +393,13 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .hero__inner { position: relative; z-index: 3; max-width: min(1200px, 94vw); }
 .hero__wordmark {
   font-family: var(--brand); font-weight: 400;
-  font-size: clamp(1.5rem, 9.5vw, 4.4rem); letter-spacing: -0.01em; line-height: 0.94;
+  font-size: clamp(1.25rem, 7.8vw, 4.4rem); letter-spacing: -0.01em; line-height: 0.94;
   color: rgba(255,255,255,0.97);
   /* Keep "DESIGNMINDSET." + the orb dot on a single line at every width — the
-     clamp scales the size down on small screens instead of wrapping. */
+     clamp scales the size down on small screens instead of wrapping. The 7.8vw
+     step keeps the (nowrap) wordmark inside the viewport: the Asterone face
+     renders ~11.4× the font size wide, so a larger step would overflow the
+     screen and knock the hero copy off-centre on phones/tablets. */
   white-space: nowrap;
   margin: 0 auto 0.5rem;
   opacity: 0;
@@ -420,7 +423,6 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   font-size: clamp(0.55rem, 1vw, 0.8rem);
   font-weight: 400; font-style: normal; text-transform: uppercase; letter-spacing: 0.2em;
   line-height: 1.3; color: rgba(255,255,255,0.92);
-  text-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.5);
   opacity: 0; animation: fadeUp 1.1s var(--ease) 0.55s forwards;
 }
 
@@ -1139,6 +1141,9 @@ body.chapters-open { overflow: hidden; }
 @media (max-width: 900px) {
   .container, .chapter__grid, .promo-release-buffer { max-width: 100vw; }
   .chapter__grid, .insta__grid, .ads__grid, .story__grid, .portfolio__grid, .process__inner { grid-template-columns: 1fr; }
+  /* Mobile: the copy always stacks above its image / video / graphic,
+     whichever side it sits on at desktop — push every visual after the text. */
+  .chapter__visual, .media-embed, .dash, .insta__card, .story__logo { order: 2; }
   /* The promo film no longer pins/grows on phones (see experience.js), so the
      tall scroll buffer it reserved would just be dead space — collapse it. */
   .promo-release-buffer { height: 0; }

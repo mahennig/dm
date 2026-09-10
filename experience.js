@@ -222,6 +222,24 @@
   }
 
   var touchLastY = 0, touchLastT = 0, touchVel = 0;
+  // Per-gesture state so a horizontal swipe that begins inside a horizontally
+  // scrollable strip (the portfolio carousel) is handed to that strip's native
+  // scroll instead of being swallowed by the page's virtual scroll.
+  var touchStartX = 0, touchStartY = 0, touchAxis = null, touchNativeX = false;
+  var touchInOverlay = false;
+  function findScrollableX(node) {
+    while (node && node !== document.body && node.nodeType === 1) {
+      if (node.scrollWidth - node.clientWidth > 4) {
+        var ox = window.getComputedStyle(node).overflowX;
+        if (ox === 'auto' || ox === 'scroll') return node;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function inOpenOverlay(node) {
+    return !!(node && node.closest && node.closest('.lightbox.is-open, .chapters-sheet.is-open'));
+  }
   function onVirtualTouchStart(e) {
     if (!useVirtualScroll || !e.touches.length) return;
     stopVirtualAnim();
@@ -229,12 +247,34 @@
     touchLastT = e.timeStamp || Date.now();
     touchVel = 0;
     virtualTargetY = virtualY;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = touchLastY;
+    touchAxis = null;
+    // A fullscreen overlay (case-study lightbox / chapters sheet) scrolls its
+    // own content natively — never hijack touches that begin inside one.
+    touchInOverlay = inOpenOverlay(e.target);
+    // Remember whether this gesture started over a horizontally scrollable
+    // carousel that still has room to scroll — a horizontal swipe there should
+    // pan the carousel, not the page.
+    touchNativeX = !touchInOverlay && !!findScrollableX(e.target);
   }
 
   function onVirtualTouchMove(e) {
     if (!useVirtualScroll || !e.touches.length) return;
-    e.preventDefault();
+    if (touchInOverlay) return; // let the open overlay scroll its own content
     var currentY = e.touches[0].clientY;
+    var currentX = e.touches[0].clientX;
+    // Decide the gesture axis once, from the first meaningful movement.
+    if (touchAxis === null) {
+      var adx = Math.abs(currentX - touchStartX);
+      var ady = Math.abs(currentY - touchStartY);
+      if (adx < 6 && ady < 6) return; // too small to tell yet — don't hijack it
+      touchAxis = adx > ady ? 'x' : 'y';
+    }
+    // Horizontal swipe inside the carousel: let its native overflow scroll take
+    // over (no preventDefault, no page movement).
+    if (touchAxis === 'x' && touchNativeX) return;
+    e.preventDefault();
     var now = e.timeStamp || Date.now();
     var dy = touchLastY - currentY;
     var dt = now - touchLastT;
@@ -811,12 +851,21 @@
     // was on screen and parked the comet at the seam, which looked disconnected.)
     var maxScroll = getScrollMax();
     var atBottom = getScrollTop() >= maxScroll - 2;
-    var prog = maxScroll > 0 ? getScrollTop() / maxScroll : 0;
-    if (prog < 0) prog = 0; else if (prog > 1) prog = 1;
-    // The *target* length for the current scroll position. The rendered length
-    // (storyDrawn) eases toward it in a RAF loop so a batched wheel/trackpad
-    // jump animates the line instead of snapping it forward all at once.
-    storyTarget = atBottom ? storyLen : storyLen * prog;
+    if (atBottom) {
+      storyTarget = storyLen;
+    } else if (window.matchMedia('(max-width: 900px)').matches) {
+      // Phones: keep the line's leading edge near the vertical middle of the
+      // view so the active point never drifts too high up the screen. Map the
+      // read-line (viewport middle) straight to a drawn length.
+      storyTarget = Math.max(0, Math.min(storyLen, lengthAtY(getScrollTop() + window.innerHeight * 0.5)));
+    } else {
+      var prog = maxScroll > 0 ? getScrollTop() / maxScroll : 0;
+      if (prog < 0) prog = 0; else if (prog > 1) prog = 1;
+      // The *target* length for the current scroll position. The rendered length
+      // (storyDrawn) eases toward it in a RAF loop so a batched wheel/trackpad
+      // jump animates the line instead of snapping it forward all at once.
+      storyTarget = storyLen * prog;
+    }
     if (reduce) {
       storyDrawn = storyTarget;
       renderStoryLine(storyDrawn);
