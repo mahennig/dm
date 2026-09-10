@@ -698,8 +698,9 @@
       var rawTop = getStaticTop(h);
       var left = getStaticLeft(h);
       var w = h.offsetWidth;
-      var centered = getComputedStyle(h).textAlign === 'center';
-      var cx = centered ? left + w / 2 : left + Math.min(w * 0.5, 54);
+      // Thread the line through the horizontal centre of each title so it
+      // touches the chapter in the middle, whichever side the copy sits on.
+      var cx = left + w / 2;
       cx = Math.max(22, Math.min(cx, vw - 22));
       return { el: h, x: cx, topY: rawTop - 4, midY: rawTop + h.offsetHeight / 2, botY: rawTop + h.offsetHeight + 4 };
     }).sort(function (a, b) { return a.topY - b.topY; });

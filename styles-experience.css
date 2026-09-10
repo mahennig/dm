@@ -488,7 +488,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.05;
   color: var(--ink);
 }
-.chapter__title { font-size: clamp(1.7rem, 4vw, 3rem); }
+.chapter__title { font-size: clamp(1.35rem, 2.8vw, 2.1rem); }
 /* Chapter 01 brand headline keeps its wordmark sizing. */
 .chapter__title--brand { font-size: clamp(1.6rem, 3.6vw, 2.6rem); line-height: 0.98; }
 /* Green textmarker with transparent (knocked-out) letters that reveal the fixed
@@ -517,7 +517,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .chapter__mark { margin-bottom: 0.12em; }
 .chapter__wordmark { display: block; color: var(--ink); }
 .chapter__q { color: var(--lime); }
-.chapter__text { margin-top: 1.5rem; color: var(--muted); font-size: 1.05rem; max-width: 44ch; }
+.chapter__text { margin-top: 1.5rem; color: var(--muted); font-size: 1.35rem; line-height: 1.6; max-width: 42ch; }
 .chapter__visual {
   position: relative; border-radius: 18px; overflow: hidden;
   aspect-ratio: 4 / 5; background: #52533f;
@@ -526,6 +526,38 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .chapter__visual img { width: 100%; height: 100%; object-fit: cover; }
 .chapter__visual.media-placeholder { display: block; }
 .chapter__visual--wide { aspect-ratio: 16 / 11; }
+/* Clickable media thumbnail — opens the source (YouTube / Instagram) in a new
+   tab, instead of embedding a heavy third-party iframe. */
+.media-embed {
+  position: relative; display: block; border-radius: 18px; overflow: hidden;
+  background: #000; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+.media-embed--video { aspect-ratio: 16 / 9; width: 100%; }
+.media-embed--reel  { aspect-ratio: 9 / 16; width: 100%; max-width: 340px; margin-inline: auto; }
+.media-embed img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease); }
+.media-embed::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%);
+}
+.media-embed:hover img { transform: scale(1.04); }
+.media-embed__play {
+  position: absolute; left: 50%; top: 50%; z-index: 2;
+  transform: translate(-50%, -50%);
+  width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(174, 251, 58, 0.92); color: #000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  transition: transform 0.3s var(--ease), background 0.3s var(--ease);
+}
+.media-embed:hover .media-embed__play { transform: translate(-50%, -50%) scale(1.08); background: var(--lime); }
+.media-embed__play svg { width: 26px; height: 26px; margin-left: 3px; }
+.media-embed__label {
+  position: absolute; left: 1rem; bottom: 1rem; z-index: 2;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.72rem; letter-spacing: 0.05em; color: #fff;
+  background: rgba(0,0,0,0.5); padding: 0.42rem 0.85rem; border-radius: 999px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.media-embed__label svg { width: 13px; height: 13px; }
 .chapter__visual--video {
   aspect-ratio: 16 / 9;
 }
