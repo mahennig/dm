@@ -471,6 +471,10 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   align-items: center;
 }
 .chapter__grid--copy { grid-template-columns: minmax(0, 44rem); justify-content: center; }
+/* Alternating copy sides so the neon storyline weaves left/right between titles */
+.chapter__grid--copy.chapter__grid--left  { justify-content: start; text-align: left; }
+.chapter__grid--copy.chapter__grid--right { justify-content: end; text-align: right; }
+.chapter__grid--right .gfx__tags { justify-content: flex-end; }
 .chapter__eyebrow {
   display: inline-flex; align-items: center; gap: 0.6rem;
   font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lime);
@@ -878,11 +882,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
 .contact { padding: 4rem 0 3.5rem; text-align: center; }
 .contact__title { font-size: clamp(2rem, 5.5vw, 3.6rem); color: var(--ink); }
 .contact__title em { font-style: normal; }
-#chapter-4 [data-story-node] em,
-#chapter-5 [data-story-node] em,
-#chapter-6 [data-story-node] em,
-#chapter-7 [data-story-node] em,
-#chapter-8 [data-story-node] em,
+.is-chapter [data-story-node] em,
 .portfolio [data-story-node] em,
 .story [data-story-node] em,
 .services [data-story-node] em,
@@ -897,11 +897,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 300; line-height: 1.02; l
   -webkit-background-clip: initial;
   background-clip: initial;
 }
-#chapter-4 [data-story-node] em::before,
-#chapter-5 [data-story-node] em::before,
-#chapter-6 [data-story-node] em::before,
-#chapter-7 [data-story-node] em::before,
-#chapter-8 [data-story-node] em::before,
+.is-chapter [data-story-node] em::before,
 .portfolio [data-story-node] em::before,
 .story [data-story-node] em::before,
 .services [data-story-node] em::before,
@@ -1046,6 +1042,10 @@ body.chapters-open { overflow: hidden; }
   .services__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .proof__grid { grid-template-columns: repeat(2, 1fr); }
   .exp-header__chapters { display: inline-flex; }
+  /* Stack copy left-aligned on mobile for readability (no side alternation) */
+  .chapter__grid--copy.chapter__grid--left,
+  .chapter__grid--copy.chapter__grid--right { justify-content: start; text-align: left; }
+  .chapter__grid--right .gfx__tags { justify-content: flex-start; }
   .chapter { min-height: auto; padding: 3.25rem 0; }
   .js .reveal--right { transform: translateY(34px); }
   .reveal--right.is-in { transform: none; }
